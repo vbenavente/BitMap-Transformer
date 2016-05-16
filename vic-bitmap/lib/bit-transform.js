@@ -6,45 +6,50 @@ module.exports = fs.readFile(__dirname + '/images/palette-bitmap.bmp', (err, buf
   if (err) {
     console.log('error', err);
   }
-  console.log(bufferData);
-  var myObj = function(bufferData) {
-    this.size = bufferData.readUInt32LE(2);
-    this.pixelStart = bufferData.readUInt32LE(10);
-    this.width = bufferData.readUInt32LE(18);
-    this.height = bufferData.readUInt32LE(22);
-    this.colorPalette = bufferData.readUInt32LE(54);
-  };
+  console.log('BUFFER DATA', bufferData);
 
-  console.log(myObj);
+  var bitMap = {};
+
+  bitMap.size = bufferData.readUInt32LE(2);
+  bitMap.pixelStart = bufferData.readUInt32LE(10);
+  bitMap.dBISize = bufferData.readUInt32LE(12);
+  bitMap.width = bufferData.readUInt32LE(18);
+  bitMap.height = bufferData.readUInt32LE(22);
+  bitMap.colorPalette = bufferData.readUInt32LE(54);
+
+  console.log('DBI', bitMap.pixelStart);
 
   var palette = [];
 
-  var readPalette = function(bufferData) {
+  bitMap.readPalette = function() {
     var counter = 0;
-    for (var i = 54; i < 182; i += 4) {
-      palette[i] = [
+    for (var i = 54; i < bitMap.pixelStart; i += 4) {
+      palette[counter] = [
         bufferData.readUInt8(i),
         bufferData.readUInt8(i + 1),
         bufferData.readUInt8(i + 2),
         0];
       counter++;
     }
+    // console.log(palette);
   };
 
-  readPalette(bufferData);
-
   palette.transform = function(palette) {
-    for (var i = 0; i < palette.length; i++) {
-      var c = i * 7;
-      palette[i] = [
-        bufferData.readUInt8(c),
-        bufferData.readUInt8(c + 1),
-        bufferData.readUInt8(c + 2),
+    for (var i = 54; i < bitMap.pixelStart; i += 4) {
+      var counter = 0;
+      var red = palette[i] * 7;
+      var green = 0;
+      var blue = 0;
+      palette[counter] = [
+        palette[i] = red.writeUInt8(i),
+        palette[i + 1] = green.writeUInt8(i + 1),
+        palette[i + 2] = blue.writeUInt8(i + 2),
         0];
+      counter++;
     }
     return palette;
   };
-  console.log(palette);
+  // console.log(palette);
 
   var transformedPalette = palette.toString();
 
