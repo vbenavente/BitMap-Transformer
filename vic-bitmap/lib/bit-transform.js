@@ -6,7 +6,7 @@ module.exports = fs.readFile(__dirname + '/images/palette-bitmap.bmp', (err, buf
   if (err) {
     console.log('error', err);
   }
-  console.log('BUFFER DATA', bufferData);
+  // console.log('BUFFER DATA', bufferData);
 
   var bitMap = {};
 
@@ -17,7 +17,7 @@ module.exports = fs.readFile(__dirname + '/images/palette-bitmap.bmp', (err, buf
   bitMap.height = bufferData.readUInt32LE(22);
   bitMap.colorPalette = bufferData.readUInt32LE(54);
 
-  console.log('DBI', bitMap.pixelStart);
+  // console.log('DBI', bitMap.pixelStart);
 
   var palette = [];
 
@@ -31,31 +31,68 @@ module.exports = fs.readFile(__dirname + '/images/palette-bitmap.bmp', (err, buf
         0];
       counter++;
     }
-    // console.log(palette);
+    // console.log(palette.length);
+    // console.log(((bitMap.pixelStart - 54) / 4), 'expect 256');
   };
 
-  palette.transform = function(palette) {
-    for (var i = 54; i < bitMap.pixelStart; i += 4) {
-      var counter = 0;
-      var red = palette[i] * 7;
-      var green = 0;
-      var blue = 0;
-      palette[counter] = [
-        palette[i] = red.writeUInt8(i),
-        palette[i + 1] = green.writeUInt8(i + 1),
-        palette[i + 2] = blue.writeUInt8(i + 2),
-        0];
-      counter++;
+  bitMap.readPalette();
+
+  palette.transform = function(data) {
+    // var blah = [];
+    for (var i = 0; i < data.length; i ++) {
+      // var colors = [];
+      var red = 0;//Math.floor(Math.random() * 255);
+      var green = 0;//Math.floor(Math.random() * 255);
+      var blue = 0;//Math.floor(Math.random() * 255);
+      // colors.push(red, green, blue, 0);
+      // blah[i] = colors;
+      data[i] = [red, green, blue, 0]
+        ;
     }
-    return palette;
+    return data;
   };
-  // console.log(palette);
 
-  var transformedPalette = palette.toString();
+  // var writeToBuffer = function(data) {
+  //   var counter = 0;
+  //   for (var i = 0; i < data.length; i++) {
+  //     data[counter] = [
+  //       data.writeUInt8(i),
+  //       data.writeUInt8(i + 1),
+  //       data.writeUInt8(i + 2),
+  //       0];
+  //     counter++;
+  //   }
+  //   return palette;
+  // };
 
-  bufferData.write(transformedPalette, 54, 256);
+  // writeToBuffer(transformedPalette);
 
-  fs.writeFile(__dirname + '/images/seven-times.bmp', bufferData, (err) => {
+  var transformedPalette = palette.transform(palette);
+  var bigArray = [];
+
+  transformedPalette.forEach(function(item) {
+    item.forEach(function(item2) {
+      bigArray.push(item2);
+    });
+  });
+  // console.log('transpal', transformedPalette);
+  // console.log('bigArray', bigArray.length, bigArray);
+  //
+  // console.log(transformedPalette.length, 'transformedPalette');
+
+  var paletteBuffer = new Buffer(bigArray);
+  var header = bufferData.slice(0, 54);
+  var tail = bufferData.slice(1078);
+
+  var newBuffer = Buffer.concat([header, paletteBuffer, tail]);
+  console.log('newBufferlength', newBuffer.length);
+
+  console.log('section', bufferData.slice(54, 1078), bufferData.slice(54, 1078).length);
+
+  bufferData.writeUInt8(transformedPalette, 54, 256);
+  // console.log(bufferData.readUInt8(54, 256));
+
+  fs.writeFile(__dirname + '/images/seven-times.bmp', newBuffer, (err) => {
     if (err) {
       console.log('error', err);
     }
