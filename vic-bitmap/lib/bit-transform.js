@@ -2,23 +2,21 @@
 
 const fs = require('fs');
 
+//  open file with fs and read file into a buffer
 module.exports = fs.readFile(__dirname + '/images/palette-bitmap.bmp', (err, bufferData) => {
   if (err) {
     console.log('error', err);
   }
-  // console.log('BUFFER DATA', bufferData);
 
+// convert buffer into a JavaScript Object
   var bitMap = {};
 
   bitMap.size = bufferData.readUInt32LE(2);
   bitMap.pixelStart = bufferData.readUInt32LE(10);
   bitMap.dBISize = bufferData.readUInt32LE(12);
-  bitMap.width = bufferData.readUInt32LE(18);
-  bitMap.height = bufferData.readUInt32LE(22);
   bitMap.colorPalette = bufferData.readUInt32LE(54);
 
-  // console.log('DBI', bitMap.pixelStart);
-
+// read color palette into an array of integers
   var palette = [];
 
   bitMap.readPalette = function() {
@@ -31,43 +29,27 @@ module.exports = fs.readFile(__dirname + '/images/palette-bitmap.bmp', (err, buf
         0];
       counter++;
     }
-    // console.log(palette.length);
-    // console.log(((bitMap.pixelStart - 54) / 4), 'expect 256');
-  };
 
+  };
+// call readPalette function!
   bitMap.readPalette();
 
+// change values (transform palette) for r,g,b to change colors in palette
   palette.transform = function(data) {
-    // var blah = [];
-    for (var i = 0; i < data.length; i ++) {
-      // var colors = [];
-      var red = 0;//Math.floor(Math.random() * 255);
-      var green = 0;//Math.floor(Math.random() * 255);
-      var blue = 0;//Math.floor(Math.random() * 255);
-      // colors.push(red, green, blue, 0);
-      // blah[i] = colors;
+    for (var i = 0; i < data.length; i++) {
+      var red = Math.floor(Math.random() * 255);
+      var green = Math.floor(Math.random() * 255);
+      var blue = Math.floor(Math.random() * 255);
+
       data[i] = [red, green, blue, 0]
         ;
     }
     return data;
   };
 
-  // var writeToBuffer = function(data) {
-  //   var counter = 0;
-  //   for (var i = 0; i < data.length; i++) {
-  //     data[counter] = [
-  //       data.writeUInt8(i),
-  //       data.writeUInt8(i + 1),
-  //       data.writeUInt8(i + 2),
-  //       0];
-  //     counter++;
-  //   }
-  //   return palette;
-  // };
-
-  // writeToBuffer(transformedPalette);
-
+//  call transform function! and store array in variable
   var transformedPalette = palette.transform(palette);
+//  make one big array out of all nested arrays
   var bigArray = [];
 
   transformedPalette.forEach(function(item) {
@@ -75,24 +57,17 @@ module.exports = fs.readFile(__dirname + '/images/palette-bitmap.bmp', (err, buf
       bigArray.push(item2);
     });
   });
-  // console.log('transpal', transformedPalette);
-  // console.log('bigArray', bigArray.length, bigArray);
-  //
-  // console.log(transformedPalette.length, 'transformedPalette');
 
+//  create new buffer of transformed color palette
   var paletteBuffer = new Buffer(bigArray);
   var header = bufferData.slice(0, 54);
   var tail = bufferData.slice(1078);
 
+// concatonate header, transformed buffer and tail to read to file
   var newBuffer = Buffer.concat([header, paletteBuffer, tail]);
-  console.log('newBufferlength', newBuffer.length);
 
-  console.log('section', bufferData.slice(54, 1078), bufferData.slice(54, 1078).length);
-
-  bufferData.writeUInt8(transformedPalette, 54, 256);
-  // console.log(bufferData.readUInt8(54, 256));
-
-  fs.writeFile(__dirname + '/images/seven-times.bmp', newBuffer, (err) => {
+//  write new buffer to file
+  fs.writeFile(__dirname + '/images/transformed-bitmap.bmp', newBuffer, (err) => {
     if (err) {
       console.log('error', err);
     }
